@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Memory Matching Game</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            background-color: #f0f0f0;
+        }
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .memory-card {
+            aspect-ratio: 3/4;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+        .memory-card.flip {
+            transform: rotateY(180deg);
+        }
+        .front-face, .back-face {
+            width: 100%;
+            height: 100%;
+            padding: 5px;
+            position: absolute;
+            border-radius: 5px;
+            background: #f3f3f3;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #ddd;
+        }
+        .front-face {
+            transform: rotateY(180deg);
+        }
+        .front-face img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .back-face {
+            font-size: 24px;
+            color: #333;
+            background-color: #e0e0e0;
+        }
+        .score-board {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .chatbot-widget {
+            position: fixed;
+            bottom: 0;
+            right: 20px;
+            width: 300px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .chatbot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #343a40;
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+        .chatbot-body {
+            display: none;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Art Collection</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('guessing_game') }}">Guessing Game</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('draw') }}">Draw</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('plot') }}">Plot</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('map') }}">Map</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="{{ url_for('memory_game') }}">Memory Game</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-5">
+        <div class="game-container">
+            <h1 class="text-center mb-4">Art Memory Matching Game</h1>
+            <div class="score-board">
+                <span>Moves: <span id="moveCount">0</span></span>
+                <span class="float-right">Matches: <span id="matchCount">0</span></span>
+            </div>
+            <div class="memory-game">
+                {% for art in art_pairs %}
+                <div class="memory-card" data-art="{{ art.title }}">
+                    <div class="front-face">
+                        <img src="{{ art.image }}" alt="{{ art.title }}">
+                    </div>
+                    <div class="back-face">?</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script>
+        const cards = document.querySelectorAll('.memory-card');
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let moves = 0;
+        let matches = 0;
+        const totalPairs = cards.length / 2;
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flip');
+
+            if (!hasFlippedCard) {
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            moves++;
+            updateMoveCount();
+
+            let isMatch = firstCard.dataset.art === secondCard.dataset.art;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            matches++;
+            updateMatchCount();
+            resetBoard();
+
+            if (matches === totalPairs) {
+                setTimeout(() => {
+                    alert(`Congratulations! You've completed the game in ${moves} moves!`);
+                }, 500);
+            }
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+
+            setTimeout(() => {
+                firstCard.classList.remove('flip');
+                secondCard.classList.remove('flip');
+                resetBoard();
+            }, 1500);
+        }
+
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        function updateMoveCount() {
+            document.getElementById('moveCount').textContent = moves;
+        }
+
+        function updateMatchCount() {
+            document.getElementById('matchCount').textContent = matches;
+        }
+
+        (function shuffle() {
+            cards.forEach(card => {
+                let randomPos = Math.floor(Math.random() * cards.length);
+                card.style.order = randomPos;
+            });
+        })();
+
+        cards.forEach(card => card.addEventListener('click', flipCard));
+
+
+
+    </script>
+</body>
+</html>

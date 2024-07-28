@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Art Piece</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body class="bg-light text-dark">
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Edit Art Piece</h1>
+        <form action="{{ url_for('edit', art_id=art_id) }}" method="post">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" name="title" id="title" class="form-control" value="{{ art_piece.title }}" required>
+            </div>
+            <div class="form-group">
+                <label for="artist">Artist:</label>
+                <input type="text" name="artist" id="artist" class="form-control" value="{{ art_piece.artist }}" required>
+            </div>
+            <div class="form-group">
+                <label for="medium">Medium:</label>
+                <input type="text" name="medium" id="medium" class="form-control" value="{{ art_piece.medium }}" required>
+            </div>
+            <div class="form-group">
+                <label for="year">Year:</label>
+                <input type="text" name="year" id="year" class="form-control" value="{{ art_piece.year }}" required>
+            </div>
+            <button type="submit" class="btn btn-success">Update</button>
+        </form>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to List</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Canvas</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        body {
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/d/d4/Godward-In_the_Days_of_Sappho-1904.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #canvas-container {
+            max-width: 100%;
+            overflow: hidden;
+            background-color: white; 
+            border-radius: 10px; 
+            padding: 20px;
+        }
+        #canvas {
+            border: 1px solid black;
+            cursor: crosshair;
+            width: 100%;
+        }
+        .color-selector {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        .draw-your-art {
+            color: black; 
+        }
+        .chatbot-widget {
+            color: black;
+            position: fixed;
+            bottom: 0;
+            right: 20px;
+            width: 300px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .chatbot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #343a40;
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+        .chatbot-body {
+            display: none;
+            padding: 10px;
+        }
+        .navbar-dark {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+        }
+        .container {
+            margin-top: 100px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Art Collection</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('guessing_game') }}">Guessing Game</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('draw') }}">Draw</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('plot') }}">Plot</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('map') }}">Map</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="{{ url_for('memory_game') }}">Memory Game</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                {% if 'username' in session %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4 draw-your-art">Draw Your Art</h1>
+        <div id="canvas-container" class="text-center mb-4">
+            <canvas id="canvas"></canvas>
+        </div>
+        <div class="text-center mb-4">
+            <div class="color-selector" style="background-color: black;"></div>
+            <div class="color-selector" style="background-color: red;"></div>
+            <div class="color-selector" style="background-color: blue;"></div>
+            <div class="color-selector" style="background-color: green;"></div>
+            <div class="color-selector" style="background-color: yellow;"></div>
+            <button id="eraserBtn" class="btn btn-light ml-3">Eraser</button>
+            <button id="clearBtn" class="btn btn-danger ml-3">Clear</button>
+            <button id="saveBtn" class="btn btn-success ml-3">Save</button>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
+        </div>
+    </div>
+   <!-- Chatbot Widget -->
+<div id="chatbotWidget" class="chatbot-widget">
+    <div class="chatbot-header">
+        <h5>Art Assistant</h5>
+        <button id="toggleChatbot" class="btn btn-light btn-sm">+</button>
+    </div>
+    <div class="chatbot-body">
+        <form id="chatbotForm">
+            <div class="form-group">
+                <label for="userMessage">Ask about art:</label>
+                <input type="text" class="form-control" id="userMessage" name="message" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Send</button>
+        </form>
+        <div id="chatbotResponse" class="mt-4"></div>
+    </div>
+</div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#toggleChatbot').text('+');
+            $('#chatbotForm').submit(function(event) {
+                event.preventDefault();
+                var userMessage = $('#userMessage').val();
+                $.ajax({
+                    url: '/chatbot',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ message: userMessage }),
+                    success: function(response) {
+                        $('#chatbotResponse').html('<p><strong>Chatbot:</strong> ' + response.response + '</p>');
+                    },
+                    error: function(xhr, status, error) {
+                        console.log(error);
+                    }
+                });
+            });
+            $('#toggleChatbot').click(function() {
+                var chatbotBody = $('.chatbot-body');
+                chatbotBody.toggle();
+                $(this).text(chatbotBody.is(':visible') ? '−' : '+');
+            });
+        });
+    </script>
+    <script>
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let drawing = false;
+        let eraser = false;
+        let currentColor = 'black';
+        let backgroundColor = getComputedStyle(document.body).backgroundColor;
+        let rect = canvas.getBoundingClientRect();
+        let offsetX = rect.left;
+        let offsetY = rect.top;
+        let lastX;
+        let lastY;
+
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+
+        canvas.addEventListener('mousedown', (e) => {
+            drawing = true;
+            lastX = e.clientX - offsetX;
+            lastY = e.clientY - offsetY;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (drawing) {
+                let x = e.clientX - offsetX;
+                let y = e.clientY - offsetY;
+                if (eraser) {
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 10;
+                } else {
+                    ctx.strokeStyle = currentColor;
+                    ctx.lineWidth = 5;
+                }
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                lastX = x;
+                lastY = y;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mouseout', () => drawing = false);
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            let dataURL = canvas.toDataURL();
+            localStorage.setItem('savedDrawing', dataURL);
+            alert("Drawing saved successfully!");
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            localStorage.removeItem('savedDrawing');
+        });
+
+        document.getElementById('eraserBtn').addEventListener('click', () => {
+            eraser = !eraser;
+            if (eraser) {
+                currentColor = backgroundColor;
+            } else {
+                currentColor = document.querySelector('.color-selector.active').style.backgroundColor;
+            }
+        });
+
+        document.querySelectorAll('.color-selector').forEach(selector => {
+            selector.addEventListener('click', () => {
+                currentColor = selector.style.backgroundColor;
+                eraser = false;
+            });
+        });
+
+        let savedDrawing = localStorage.getItem('savedDrawing');
+        if (savedDrawing) {
+            let img = new Image();
+            img.src = savedDrawing;
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+            };
+        }
+    </script>
+
+</script>
+</body>
+</html>

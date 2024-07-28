@@ -1,0 +1,49 @@
+<div id="chatbotWidget" class="chatbot-widget">
+    <div class="chatbot-header">
+        <h5>Chatbot</h5>
+        <button id="toggleChatbot" class="btn btn-light btn-sm">&minus;</button>
+    </div>
+    <div class="chatbot-body">
+        <form id="chatbotForm">
+            <div class="form-group">
+                <label for="userMessage">Your Message:</label>
+                <input type="text" class="form-control" id="userMessage" name="message" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+        <div id="chatbotResponse" class="mt-4"></div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#toggleChatbot').text('+');
+        $('#chatbotForm').submit(function (event) {
+            event.preventDefault();
+            var userMessage = $('#userMessage').val();
+            $.ajax({
+                url: '/chatbot',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    message: userMessage
+                }),
+                success: function (response) {
+                    $('#chatbotResponse').html('<p><strong>Chatbot:</strong> ' + response.response + '</p>');
+                },
+                error: function (xhr, status, error) {
+                    console.log(error);
+                }
+            });
+        });
+
+        $('#toggleChatbot').click(function () {
+            var chatbotBody = $('.chatbot-body');
+            chatbotBody.toggle();
+            $(this).text(chatbotBody.is(':visible') ? '−' : '+');
+        });
+    });
+</script>

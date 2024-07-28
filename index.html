@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art Collection by Sofia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #e74c3c;
+            --accent-color: #f39c12;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: var(--primary-color) !important;
+        }
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1561214115-f2f134cc4912?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 150px 0;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            transition: all 0.3s ease;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            color: var(--primary-color);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        .btn-warning {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .btn-danger {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        .footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+        .chatbot-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .chatbot-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .chatbot-body {
+            display: none;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Sofia's Art Collection</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('guessing_game') }}">Guessing Game</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('draw') }}">Draw</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('plot') }}">Plot</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('map') }}">Map</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('memory_game') }}">Memory Game</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                {% if 'username' in session %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <h1>Welcome to the Art Collection</h1>
+        <p class="lead">by Sofia</p>
+        <p>Discover the beauty of art through our carefully curated collection</p>
+    </div>
+
+    <div class="container">
+        {% if 'username' in session %}
+            <h2 id="welcomeMessage" class="text-left mb-4">Welcome back, {{ session['username'] }}!</h2>
+        {% else %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">Join Our Art Community</h3>
+                    <form id="loginForm" class="form-inline" method="POST" action="{{ url_for('login') }}">
+                        <div class="form-group mr-2">
+                            <input type="text" class="form-control" placeholder="Username" name="username" required>
+                        </div>
+                        <div class="form-group mr-2">
+                            <input type="password" class="form-control" placeholder="Password" name="password" required>
+                        </div>
+                        <button type="submit" id="loginBtn" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+
+        <h2 class="text-center mb-4">Our Curated Collection</h2>
+        <a href="{{ url_for('add') }}" class="btn btn-primary mb-4">Add New Art Piece</a>
+        <div class="row">
+            {% for art in art_pieces %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ art.title }}</h5>
+                            <p class="card-text"><strong>Artist:</strong> {{ art.artist }}</p>
+                            <p class="card-text"><strong>Medium:</strong> {{ art.medium }}</p>
+                            <p class="card-text"><strong>Year:</strong> {{ art.year }}</p>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="{{ url_for('edit', art_id=art.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                            <a href="{{ url_for('delete', art_id=art.id) }}" class="btn btn-danger btn-sm">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <h2 class="text-center mt-5 mb-4">Inspirations from The Metropolitan Museum</h2>
+        <div class="text-center mb-4">
+            <a href="{{ url_for('refresh') }}" class="btn btn-info">Discover New Pieces</a>
+        </div>
+           <div class="row">
+        {% for art in art_images %}
+            {% if art.image %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <img src="{{ art.image }}" class="card-img-top" alt="{{ art.title }}" style="height: 300px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ art.title }}</h5>
+                            <p class="card-text"><strong>Artist:</strong> {{ art.artist if art.artist else 'Unknown' }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Chatbot Widget -->
+    <div id="chatbotWidget" class="chatbot-widget">
+        <div class="chatbot-header">
+            <h5>Art Assistant</h5>
+            <button id="toggleChatbot" class="btn btn-light btn-sm">+</button>
+        </div>
+        <div class="chatbot-body">
+            <form id="chatbotForm">
+                <div class="form-group">
+                    <label for="userMessage">Ask about art:</label>
+                    <input type="text" class="form-control" id="userMessage" name="message" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Send</button>
+            </form>
+            <div id="chatbotResponse" class="mt-4"></div>
+        </div>
+    </div>
+
+    <footer class="footer text-center">
+        <div class="container">
+            <p>&copy; 2024 Art Collection by Sofia. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Include Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        document.getElementById('toggleChatbot').addEventListener('click', function() {
+            const chatbotBody = document.querySelector('.chatbot-body');
+            if (chatbotBody.style.display === 'none' || chatbotBody.style.display === '') {
+                chatbotBody.style.display = 'block';
+                this.textContent = '-';
+            } else {
+                chatbotBody.style.display = 'none';
+                this.textContent = '+';
+            }
+        });
+
+        document.getElementById('chatbotForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const userMessage = document.getElementById('userMessage').value;
+            if (userMessage) {
+                const messageContainer = document.createElement('div');
+                messageContainer.classList.add('mb-2');
+                messageContainer.innerHTML = `<strong>You:</strong> ${userMessage}`;
+                document.getElementById('chatbotResponse').appendChild(messageContainer);
+
+                fetch('http://127.0.0.1:5000/chatbot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const botResponseContainer = document.createElement('div');
+                    botResponseContainer.classList.add('mb-2');
+                    botResponseContainer.innerHTML = `<strong>Bot:</strong> ${data.response}`;
+                    document.getElementById('chatbotResponse').appendChild(botResponseContainer);
+                });
+
+                document.getElementById('userMessage').value = '';
+            }
+        });
+    </script>
+</body>
+</html>
